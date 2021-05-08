@@ -2,6 +2,7 @@
 pragma solidity ^0.8.1;
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "hardhat/console.sol";
+// import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 
 interface IUniswapV2Factory {
     event PairCreated(
@@ -247,13 +248,15 @@ contract SwapingContract {
         uniFact = IUniswapV2Factory(uni.factory());
     }
 
-    function swapETHtoToken(address _addressToSwap) public payable {
+    function swapETHtoToken(address _addressToSwap, uint _slippage) public payable {
         require(address(0) != uniFact.getPair(uni.WETH(), _addressToSwap),"Non Existant Pair For transaction");
-
-        console.log("Sender value is %s Wei", msg.value);
-
+        require(_slippage < 100, "slippage cannot be more than 100%");
+        uint _number = uni.getAmountsOut(msg.value, get_path(_addressToSwap))[1];
+        console.log("Espected return value    is %s tokens", _number);
+        _number = (_number * (100 - _slippage)) / 100;
+        console.log("Espected return variance is %s tokens", _number);
         uni.swapExactETHForTokens{value: msg.value}(
-            10,
+            _number,
             get_path(_addressToSwap),
             msg.sender,
             block.timestamp + 15
