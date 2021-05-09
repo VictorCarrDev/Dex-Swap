@@ -2,6 +2,7 @@
 pragma solidity ^0.8.1;
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "hardhat/console.sol";
+
 // import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 
 interface IUniswapV2Factory {
@@ -243,23 +244,32 @@ contract SwapingContract {
         IUniswapV2Router02(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
     IUniswapV2Factory uniFact;
     ERC20 UniToken = ERC20(0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984);
-
+    address payable owner;
     constructor() {
         uniFact = IUniswapV2Factory(uni.factory());
+        owner = payable(msg.sender);
+
     }
 
-    function swapETHtoToken(address _addressToSwap, uint _slippage) public payable {
-        require(address(0) != uniFact.getPair(uni.WETH(), _addressToSwap),"Non Existant Pair For transaction");
+    function swapETHtoToken(
+        address _addressToSwap,
+        uint256 amountSent,
+        uint256 _slippage
+    ) internal {
+        require(
+            address(0) != uniFact.getPair(uni.WETH(), _addressToSwap),
+            "Non Existant Pair For transaction"
+        );
         require(_slippage < 100, "slippage cannot be more than 100%");
         address[] memory _path = get_path(_addressToSwap);
-        uint _number = uni.getAmountsOut(msg.value, _path)[1];
+        uint256 _number = uni.getAmountsOut(amountSent, _path)[1];
 
         console.log("Espected return value    is %s tokens", _number);
         _number = (_number * (100 - _slippage)) / 100;
 
         console.log("Espected return variance is %s tokens", _number);
-        
-        uni.swapExactETHForTokens{value: msg.value}(
+
+        uni.swapExactETHForTokens{value: amountSent}(
             _number,
             _path,
             msg.sender,
@@ -272,6 +282,37 @@ contract SwapingContract {
         );
     }
 
+    function SwapMultiple(
+        address[] memory _addressesToSwap,
+        uint256[] memory _distribution,
+        uint256 _slipp
+    ) external payable {
+        require(_addressesToSwap.length == _distribution.length, "array size doesnt match");
+         uint _max = 100;
+         bool _continue = true;
+        for (uint256 index = 0; index < _addressesToSwap.length; index++) {
+            unchecked {
+            _distribution[index] > _max ? (_continue = false, _max = _max) : (_continue = true , _max = _max - _distribution[index]);
+            }   
+            if (!_continue) {
+                break;
+            }
+            uint _num =  (_distribution[index] * msg.value) / 100;
+            uint _fee = _num * 1 /1000;
+            _num -= _fee;
+            console.log(_num);
+            console.log(_fee);
+            owner.transfer(_fee);
+            swapETHtoToken(
+                _addressesToSwap[index],
+               _num,
+                _slipp
+            );
+        }
+        console.log(_max);
+        payable(msg.sender).transfer(msg.value * _max / 100);
+    }
+
     function get_path(address _address)
         internal
         view
@@ -282,5 +323,4 @@ contract SwapingContract {
         _path[1] = _address;
         return _path;
     }
-
 }
