@@ -251,16 +251,21 @@ contract SwapingContract {
     function swapETHtoToken(address _addressToSwap, uint _slippage) public payable {
         require(address(0) != uniFact.getPair(uni.WETH(), _addressToSwap),"Non Existant Pair For transaction");
         require(_slippage < 100, "slippage cannot be more than 100%");
-        uint _number = uni.getAmountsOut(msg.value, get_path(_addressToSwap))[1];
+        address[] memory _path = get_path(_addressToSwap);
+        uint _number = uni.getAmountsOut(msg.value, _path)[1];
+
         console.log("Espected return value    is %s tokens", _number);
         _number = (_number * (100 - _slippage)) / 100;
+
         console.log("Espected return variance is %s tokens", _number);
+        
         uni.swapExactETHForTokens{value: msg.value}(
             _number,
-            get_path(_addressToSwap),
+            _path,
             msg.sender,
             block.timestamp + 15
         );
+
         console.log(
             "Sender balance is %s tokens",
             ERC20(_addressToSwap).balanceOf(msg.sender)
@@ -276,14 +281,6 @@ contract SwapingContract {
         _path[0] = uni.WETH();
         _path[1] = _address;
         return _path;
-    }
-
-    function getinfoValue(address _address)
-        public
-        view
-        returns (uint256[] memory)
-    {
-        return uni.getAmountsOut(1, get_path(_address));
     }
 
 }
