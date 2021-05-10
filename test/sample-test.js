@@ -181,6 +181,7 @@ beforeEach(async () => {
       let token_list =[UNITOKEN,DAITOKEN,LINKTOKEN]
       let seller =await bestSeller(token_list,ammount)
       let transaction =  await instance.SwapMultipleV2(token_list,[20,25,40],seller,5,{value:web3.utils.toWei(ammount),from:accounts[1]})
+      console.log("gas used in here was %s",transaction.receipt.gasUsed)
       token_list =[UNITOKEN,DAITOKEN]
       seller = await bestSeller(token_list,ammount)
       transaction =  await instance.SwapMultipleV2(token_list,[50,50],seller,5,{value:web3.utils.toWei(ammount),from:accounts[1]})
