@@ -134,12 +134,26 @@ beforeEach(async () => {
     assert.equal(etherInstance.address, upgrade.address)
   });
 
-  it("should trade Ether", async () => {
+  it("should trade Ether With Uniswap", async () => {
     try {
       let ammount = "1"
       let token_list = [BTCTOKEN,LINKTOKEN]
       let seller = await bestSeller(token_list,ammount)
-     const transaction =  await instance.SwapMultipleV2(token_list,[50,50],seller,5,{value:web3.utils.toWei(ammount)})
+     const transaction =  await instance.SwapMultipleV2(token_list,[50,50],[0,0],5,{value:web3.utils.toWei(ammount)})
+     console.log("gas used in here was %s",transaction.receipt.gasUsed)
+     assert.isOk(transaction)
+    } catch (error) {
+      assert.fail(error)
+    }
+
+  })
+  it("should trade Ether With Balancer", async () => {
+    try {
+      let ammount = "1"
+      let token_list = [BTCTOKEN,LINKTOKEN]
+      let seller = await bestSeller(token_list,ammount)
+     const transaction =  await instance.SwapMultipleV2(token_list,[50,50],[1,1],5,{value:web3.utils.toWei(ammount)})
+     console.log("gas used in here was %s",transaction.receipt.gasUsed)
      assert.isOk(transaction)
     } catch (error) {
       assert.fail(error)
